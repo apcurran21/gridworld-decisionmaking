@@ -266,8 +266,8 @@ if __name__ == "__main__":
                     tasks.append([(occlusionInd, occlusionList[simulationInd][occlusionInd]),
                             (predatorInd, predatorList[simulationInd][occlusionInd][predatorInd]), None, simulationInd, planningDir])
                     
-        # for proof of concept, just run the very first task
-        tasks = [tasks[0]]
+        # # for proof of concept, just run the very first task
+        # tasks = [tasks[0]]
 
         task_index = 0
         numWorkers = size - 1

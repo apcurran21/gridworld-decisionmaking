@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH -A e32704
 #SBATCH -p normal
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=2
-#SBATCH --mem-per-cpu=16G
-#SBATCH -t 15:00:00
-#SBATCH --job-name="single_sim_test"
+#SBATCH --nodes=8
+#SBATCH --ntasks-per-node=16
+#SBATCH --mem-per-cpu=3256M
+#SBATCH -t 24:00:00
+#SBATCH --job-name="initial_sim_test"
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=andycurran2025@u.northwestern.edu
 #SBATH --constraint="[quest7|quest8|quest9|quest10]"

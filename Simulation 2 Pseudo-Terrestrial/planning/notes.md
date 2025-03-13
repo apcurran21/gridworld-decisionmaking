@@ -62,6 +62,8 @@ List of notable classes:
         * Memory Utilized: 388.66 MB
         * Memory Efficiency: 1.19% of 32.00 GB
     * Note that 'OcclusionCoordinates.csv' was empty - I take this to mean that the first trial was a simple, open arena.
+* I believe that the `visualRange` parameter is used whenever we want to run a simulation that enforces a limited visual cone of 1, 3, 5 squares etc.
+    * I need to decide whether I want to test unlimited vision or a series of visual cone range trials
 
 ### Planning
 * 

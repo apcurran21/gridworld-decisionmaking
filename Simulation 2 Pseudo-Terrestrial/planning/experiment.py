@@ -24,7 +24,7 @@ class Results:
         self.Steps.Clear()
 
 
-class ExperimentParams:
+class ExperimentParamsOld:
     SpawnArea = 4
     NumRuns = 20
     NumPredators = 5
@@ -40,6 +40,44 @@ class ExperimentParams:
     AutoExploration = True
     EntropyLevels = [float(i)/10. for i in range(0, 10)]
     Depth = [100, 1000, 5000]
+
+
+
+class ExperimentParamsOld:
+    SpawnArea = 4
+    NumRuns = 1
+    NumPredators = 5
+    NumSteps = 200
+    SimSteps = 1000
+    TimeOut = 36000
+    MinDoubles = 0
+    MaxDoubles = 50
+    TransformDoubles = -1
+    TransformAttempts = 1000
+    Accuracy = 0.01
+    UndiscountedHorizon = 100
+    AutoExploration = True
+    EntropyLevels = [float(i)/10. for i in range(0, 10)]
+    Depth = [100, 1000, 5000]
+
+
+class ExperimentParams:
+    # my edits to decrease the number of total simulations
+    SpawnArea = 4
+    NumRuns = 1
+    NumPredators = 1
+    NumSteps = 100
+    SimSteps = 1000
+    TimeOut = 3600
+    MinDoubles = 0
+    MaxDoubles = 50
+    TransformDoubles = -1
+    TransformAttempts = 1000
+    Accuracy = 0.01
+    UndiscountedHorizon = 100
+    AutoExploration = True
+    EntropyLevels = [float(i)/10. for i in range(0, 10, 3)]
+    Depth = [100]
 
 
 class Experiment:
