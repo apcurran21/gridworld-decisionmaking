@@ -26,6 +26,14 @@ class Knowledge():
 
 class PHASE:
     TREE, ROLLOUT, NUM_PHASES, MCC = range(4)
+    """
+    Effect of the above code:
+        PHASE.TREE = 0
+        PHASE.ROLLOUT = 1
+        PHASE.NUM_PHASES = 2
+        PHASE.MCC = 3
+    Allows us to have more readable control code compared to hard ints
+    """
 
 
 class PARTICLES:

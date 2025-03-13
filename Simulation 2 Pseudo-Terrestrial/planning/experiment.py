@@ -5,7 +5,7 @@ from statistics import STATISTICS
 
 import csv, pickle, os
 
-from pathlib2 import Path
+from pathlib import Path
 import pandas as pd
 
 class Results:

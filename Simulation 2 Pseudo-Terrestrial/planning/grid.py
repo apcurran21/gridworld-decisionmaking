@@ -74,6 +74,7 @@ class Grid:
         return [y for x in temp for y in x]  # if self.Inside(y)]
 
     def VisualRay(self, coord1, coord2, occlusions):
+        # returns a boolean indicating true if the line of sight is clear
         points = LineCoordinates(coord1, coord2)
         intersections = set(occlusions).intersection(set(points))
         return (len(intersections) == 0), points

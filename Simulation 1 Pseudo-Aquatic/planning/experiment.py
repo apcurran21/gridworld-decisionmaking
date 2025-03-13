@@ -3,7 +3,7 @@ from episode import Episode
 from timeit import default_timer as timer
 from statistics import STATISTICS
 
-from pathlib2 import Path
+from pathlib import Path
 import pandas as pd
 
 

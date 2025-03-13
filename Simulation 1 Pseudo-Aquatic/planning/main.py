@@ -6,7 +6,7 @@ from utils import UnitTestUTILS
 from coord import COORD, UnitTestCOORD, ManhattanDistance
 
 import os, sys, pickle, random
-from pathlib2 import Path
+from pathlib import Path
 
 from mpi4py import MPI
 

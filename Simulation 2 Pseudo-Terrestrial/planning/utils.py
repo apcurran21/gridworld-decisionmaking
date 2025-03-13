@@ -32,6 +32,7 @@ def CheckFlag(flags, bit):
     return (flags & (1 << bit)) != 0
 
 def UnitTestUTILS():
+    print("Running UnitTestUtils...")
     assert (Sign(10) == 1)
     assert (Sign(-10) == -1)
     assert (Sign(0) == 0)

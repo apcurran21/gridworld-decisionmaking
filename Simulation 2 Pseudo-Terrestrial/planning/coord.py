@@ -134,6 +134,7 @@ Compass = [North,
 CompassString = ["N", "E", "S", "W", "NM", "NaA"]
 
 def UnitTestCOORD():
+    print("Testing coordinate code...")
     assert (COORD(3, 3) + COORD(2, 2) == COORD(5, 5))
     coord = COORD(5, 2)
     coord += COORD(2, 5)

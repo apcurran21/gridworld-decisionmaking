@@ -1,4 +1,4 @@
-from statistics import STATISTICS
+from .statistics import STATISTICS
 from history import History
 from simulator import Status, PHASE
 from utils import Random, Infinity, LargeInteger

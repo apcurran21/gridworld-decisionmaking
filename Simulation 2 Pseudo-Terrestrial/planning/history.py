@@ -2,6 +2,14 @@ class History:
     def __init__(self):
         self.HistoryVector = []
 
+    def __str__(self):
+        result = "History:\n"
+        if self.HistoryVector:
+            for entry in self.HistoryVector:
+                result += f"\t{entry}\n"
+        return result
+
+
     def Add(self, action, observation=-1, state=None):
         self.HistoryVector.append(ENTRY(action, observation, state))
 
