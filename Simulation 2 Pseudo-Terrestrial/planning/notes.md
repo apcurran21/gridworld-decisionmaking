@@ -48,6 +48,7 @@ List of notable classes:
                 * df.to_csv(summaryFile, encoding='utf-8', index=False)
     * However, the actually file structure only has the path '/projects/e32704/andy/decisionmaking/gridworld-results/initial_test/Data/Simulation_0/Occlusion_0'
         * in other words, the 'Predator_0' directory was not created - I'm not sure yet which function is responsible for handling this
+    * NOTE that the global variable `visualRange` is set to None in 'new_main.py'
     * this was the memory usage of the trial:
         * Job ID: 7686465
         * Cluster: quest
