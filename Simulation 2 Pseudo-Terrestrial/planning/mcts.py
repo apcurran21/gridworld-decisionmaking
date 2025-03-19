@@ -1,4 +1,4 @@
-from statistics import STATISTICS
+from statistics0 import STATISTICS
 from history import History
 from simulator import Status, PHASE
 from utils import Random, Infinity, LargeInteger
@@ -149,7 +149,7 @@ class MCTS:
 
     def CreateTransform(self):
         state = self.Root.BeliefState.CreateSample(self.Simulator)
-        terminal, state, stepObs, stepReward = self.Simulator.Step(state, self.History.Back().Action)
+        terminal, state, stepObs, stepReward, audio_observation = self.Simulator.Step(state, self.History.Back().Action)
         if self.Simulator.LocalMove(state, self.History, stepObs, self.Status):
             return state
         self.Simulator.FreeState(state)
@@ -180,7 +180,7 @@ class MCTS:
 
         while numSteps + self.TreeDepth < SearchParams.MaxDepth and not terminal:
             action = self.Simulator.SelectRandom(state, self.History, self.Status)
-            terminal, state, observation, reward = self.Simulator.Step(state, action)
+            terminal, state, observation, reward, audio_observation = self.Simulator.Step(state, action)
 
             if SearchParams.Verbose:
                 self.Simulator.DisplayState(state)
@@ -248,8 +248,7 @@ class MCTS:
     def SimulateQ(self, state, qnode, action):
         delayedReward = 0.0
 
-        terminal, state, observation, immediateReward = \
-            self.Simulator.Step(state, action)
+        terminal, state, observation, immediateReward, audio_observation = self.Simulator.Step(state, action)
         assert(observation >= 0 and observation < self.Simulator.GetNumObservations())
         self.History.Add(action, observation, state=self.Simulator.Copy(state))
 

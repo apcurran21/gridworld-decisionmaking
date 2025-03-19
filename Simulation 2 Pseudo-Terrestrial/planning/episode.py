@@ -1,19 +1,23 @@
 import csv
 
 class ENTRY:
-    def __init__(self, action, observation, reward, state):
+    def __init__(self, action, observation, reward, state, audio_observation):
         self.Action = action
         self.Observation = observation
         self.Reward = reward
         self.State = state
+        self.AudioObservation = audio_observation
 
 class Episode:
     def __init__(self):
         self.EpisodeVector = []
         self.AllEpisodes = []
 
-    def Add(self, action, observation, state, reward=0):
-        self.EpisodeVector.append(ENTRY(action, observation, reward, state))
+    def Add(self, action, observation, state, audio_observation, reward=0):
+        """
+        REMEMBER TO PUT `audio_observation` BEFORE `reward`
+        """
+        self.EpisodeVector.append(ENTRY(action, observation, reward, state, audio_observation))
 
     def Complete(self):
         self.AllEpisodes.append(self.EpisodeVector)
@@ -55,6 +59,9 @@ class Episode:
         return True
 
     def Episode2CSV(self, filename):
+
+        print("Inside Episode2CSV, len of episode vector: ", len(self.EpisodeVector))
+
         episodeDict = {}
         episodeDict['Action'] = []
         episodeDict['Observation'] = []
@@ -63,6 +70,7 @@ class Episode:
         episodeDict['Agent X'] = []
         episodeDict['Agent Y'] = []
         episodeDict['Reward'] = []
+        episodeDict['Audio Observation'] = []
 
         for episode in self.EpisodeVector:
             episodeDict['Action'].append(episode.Action)
@@ -72,6 +80,7 @@ class Episode:
             episodeDict['Agent Y'].append(episode.State.AgentPos.Y)
             episodeDict['Observation'].append(episode.Observation)
             episodeDict['Reward'].append(episode.Reward)
+            episodeDict['Audio Observation'].append(episode.AudioObservation)
 
         columns = sorted(episodeDict)
         with open(filename, 'w') as f:

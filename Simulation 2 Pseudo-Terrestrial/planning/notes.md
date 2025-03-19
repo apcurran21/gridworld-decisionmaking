@@ -29,6 +29,7 @@ List of notable classes:
 
 
 ## General Notes
+* I think that for each task, a certain number of trials gets ran that is equal to range(ExperimentParams.MinDoubles, ExperimentParams.MaxDoubles). This is originally set to [0, 50], which is quite a lot.
 * the `gen_init_vars` function in 'new_main.py' sets the output directory for the planning simulations as `os.getcwd`.
 * I experienced an OSError for the following job:
     * srun job start: Sun Mar  9 19:15:32 CDT 2025

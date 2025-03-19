@@ -1,7 +1,7 @@
 from mcts import MCTS, SearchParams
 from episode import Episode
 from timeit import default_timer as timer
-from statistics import STATISTICS
+from statistics0 import STATISTICS
 
 import csv, pickle, os
 
@@ -41,24 +41,23 @@ class ExperimentParamsOld:
     EntropyLevels = [float(i)/10. for i in range(0, 10)]
     Depth = [100, 1000, 5000]
 
-
-
-class ExperimentParamsOld:
-    SpawnArea = 4
-    NumRuns = 1
-    NumPredators = 5
-    NumSteps = 200
-    SimSteps = 1000
-    TimeOut = 36000
-    MinDoubles = 0
-    MaxDoubles = 50
-    TransformDoubles = -1
-    TransformAttempts = 1000
-    Accuracy = 0.01
-    UndiscountedHorizon = 100
-    AutoExploration = True
-    EntropyLevels = [float(i)/10. for i in range(0, 10)]
-    Depth = [100, 1000, 5000]
+    def __str__(self):
+        return (f"ExperimentParams:\n"
+                f"\tSpawnArea: {self.SpawnArea}\n"
+                f"\tNumRuns: {self.NumRuns}\n"
+                f"\tNumPredators: {self.NumPredators}\n"
+                f"\tNumSteps: {self.NumSteps}\n"
+                f"\tSimSteps: {self.SimSteps}\n"
+                f"\tTimeOut: {self.TimeOut}\n"
+                f"\tMinDoubles: {self.MinDoubles}\n"
+                f"\tMaxDoubles: {self.MaxDoubles}\n"
+                f"\tTransformDoubles: {self.TransformDoubles}\n"
+                f"\tTransformAttempts: {self.TransformAttempts}\n"
+                f"\tAccuracy: {self.Accuracy}\n"
+                f"\tUndiscountedHorizon: {self.UndiscountedHorizon}\n"
+                f"\tAutoExploration: {self.AutoExploration}\n"
+                f"\tEntropyLevels: {self.EntropyLevels}\n"
+                f"\tDepth: {self.Depth}\n")
 
 
 class ExperimentParams:
@@ -70,18 +69,42 @@ class ExperimentParams:
     SimSteps = 1000
     TimeOut = 3600
     MinDoubles = 0
-    MaxDoubles = 50
+    # MaxDoubles = 5      # should be 5 trials
+    MaxDoubles = 1
     TransformDoubles = -1
     TransformAttempts = 1000
     Accuracy = 0.01
     UndiscountedHorizon = 100
     AutoExploration = True
-    EntropyLevels = [float(i)/10. for i in range(0, 10, 3)]
-    Depth = [100]
+    # EntropyLevels = [float(i)/10. for i in range(0, 10, 3)]
+    # EntropyLevels = [0.5] # only one entropy level, and high entropy
+    EntropyLevels = [0.7] # only one entropy level, and high entropy
+    # i believe that hearing will be more helpful at this level of clutter
+    Depth = [100]   # only the most shallow thinking for computational reasons
+
+    def __str__(self):
+        return (f"ExperimentParams:\n"
+                f"\tSpawnArea: {self.SpawnArea}\n"
+                f"\tNumRuns: {self.NumRuns}\n"
+                f"\tNumPredators: {self.NumPredators}\n"
+                f"\tNumSteps: {self.NumSteps}\n"
+                f"\tSimSteps: {self.SimSteps}\n"
+                f"\tTimeOut: {self.TimeOut}\n"
+                f"\tMinDoubles: {self.MinDoubles}\n"
+                f"\tMaxDoubles: {self.MaxDoubles}\n"
+                f"\tTransformDoubles: {self.TransformDoubles}\n"
+                f"\tTransformAttempts: {self.TransformAttempts}\n"
+                f"\tAccuracy: {self.Accuracy}\n"
+                f"\tUndiscountedHorizon: {self.UndiscountedHorizon}\n"
+                f"\tAutoExploration: {self.AutoExploration}\n"
+                f"\tEntropyLevels: {self.EntropyLevels}\n"
+                f"\tDepth: {self.Depth}\n")
+    
 
 
 class Experiment:
-    def __init__(self, real, simulator):
+    def __init__(self, real, simulator, jobarr_id):
+        self.JobArrID = jobarr_id
         self.Real = real
         self.Simulator = simulator
         self.Episode = Episode()
@@ -103,7 +126,8 @@ class Experiment:
 
         state = self.Real.CreateStartState()
         currentState = self.Real.Copy(state)
-        self.Episode.Add(-1, -1, currentState, 0)
+        self.Episode.Add(-1, -1, currentState, -1, 0)   # since action and observation are not defined for the start state (-1),
+                                                        # do the same for the audio observation
 
         self.MCTS = MCTS(self.Simulator)
 
@@ -116,7 +140,7 @@ class Experiment:
         while t < ExperimentParams.NumSteps:
             action = self.MCTS.SelectAction(state)
 
-            terminal, state, observation, reward = self.Real.Step(state, action)
+            terminal, state, observation, reward, audio_observation = self.Real.Step(state, action)
             currentState = self.Real.Copy(state)
 
             self.NumObservation += 1*(observation > 0)
@@ -124,20 +148,20 @@ class Experiment:
             discountedReturn += reward * discount
             discount *= self.Real.GetDiscount()
 
-            self.Episode.Add(action, observation, currentState, reward)
+            self.Episode.Add(action, observation, currentState, audio_observation, reward)
 
             if SearchParams.Verbose:
                 self.Real.DisplayState(state)
 
             if terminal:
-                self.Episode.Add(action, observation, currentState, reward)
+                self.Episode.Add(action, observation, currentState, audio_observation, reward)
                 self.Episode.Complete()
                 return reward
 
             notOutOfParticles, beliefState = self.MCTS.Update(action, observation, currentState)
             if not notOutOfParticles:
                 print("random action selection")
-                self.Episode.Add(action, observation, currentState, reward)
+                self.Episode.Add(action, observation, currentState, audio_observation, reward)
                 break
 
 #            if (timer() - start) > ExperimentParams.TimeOut:
@@ -154,7 +178,7 @@ class Experiment:
                 t += 1
 
                 action = self.Simulator.SelectRandom(state, history, self.MCTS.GetStatus())
-                terminal, state, observation, reward = self.Real.Step(state, action)
+                terminal, state, observation, reward, audio_observation = self.Real.Step(state, action)
 
                 self.Results.Reward.Add(reward)
                 undiscountedReturn += reward
@@ -165,12 +189,12 @@ class Experiment:
                     self.Real.DisplayState(state)
 
                 if terminal:
-                    self.Episode.Add(action, observation, state, reward)
+                    self.Episode.Add(action, observation, state, audio_observation, reward)
                     self.Episode.Complete()
                     return reward
 
                 self.MCTS.History.Add(action, observation)
-                self.Episode.Add(action, observation, state, reward)
+                self.Episode.Add(action, observation, state, audio_observation, reward)
 
     def DiscountedReturn(self, occlusions, predatorHome, knowledge,
                                     occlusionInd, predatorInd, simulationDirectory, visualRange=None):
@@ -190,30 +214,31 @@ class Experiment:
         summary = {'Depth 100': [],
                    'Depth 1000': []}
 
-        if Path(summaryFile).is_file():
-            ExperimentParams.Depth = [5000]
+        # TODO: this is weird
+        # I think this might be an artifact of their attempts at rerunning something:
+        # eg, if the summary file exists, they knew that they already had their 100 and 1000
+        # depth runs, so they just needed to run the 5000 depth runs
+        # if Path(summaryFile).is_file():
+        #     ExperimentParams.Depth = [5000]
 
         for depth in ExperimentParams.Depth:
-            if depth == 5000:
-                if visualRange is None:
-                    directory = simulationDirectory + '/Occlusion_%d/Predator_%d/Depth_%d' % (occlusionInd, predatorInd, depth)
-                    Path(directory).mkdir(parents=True, exist_ok=True)
-                else:
-                    directory = simulationDirectory + '/Occlusion_%d/Predator_%d/VisualRange_%d/Depth_%d' % (
-                    occlusionInd, predatorInd, visualRange, depth)
-                    Path(directory).mkdir(parents=True, exist_ok=True)
+            print(f"current depth: {depth}")
+            if visualRange is None:
+                directory = simulationDirectory + '/Occlusion_%d/Predator_%d/Depth_%d' % (occlusionInd, predatorInd, depth)
+                Path(directory).mkdir(parents=True, exist_ok=True)
             else:
-                df = pd.DataFrame({key: pd.Series(value) for key, value in summary.items()})
-                df.to_csv(summaryFile, encoding='utf-8', index=False)
+                directory = simulationDirectory + '/Occlusion_%d/Predator_%d/VisualRange_%d/Depth_%d' % (
+                occlusionInd, predatorInd, visualRange, depth)
+                Path(directory).mkdir(parents=True, exist_ok=True)
 
             for trial in range(ExperimentParams.MinDoubles, ExperimentParams.MaxDoubles):
-                if depth == 5000:
-                    episodeFile = directory + '/Episode_%d.csv' % (trial)
+                print(f"current trial: {trial}")
+                episodeFile = directory + '/Episode_%d.csv' % (trial)
 
-                    if Path(episodeFile).is_file():
-                        episode = pd.read_csv(episodeFile, header=0)
-                        if episode['Reward'].iloc[-1] != -1:
-                            return 1
+                if Path(episodeFile).is_file():
+                    episode = pd.read_csv(episodeFile, header=0)
+                    if episode['Reward'].iloc[-1] != -1:
+                        return 1
 
                 self.Results.Clear()
 
@@ -253,13 +278,16 @@ class Experiment:
                     self.Real.InitializeDisplay()
 
                 terminalReward = self.Run()
+                # not sure what to do with terminal reward?
+                print("Trial finsished: length of episodes is ", len(self.Episode.EpisodeVector))
 
-                if depth < 5000:
-                    summary['Depth %d' % depth].append(terminalReward)
-                else:
-                    self.Episode.Episode2CSV(episodeFile)
+                self.Episode.Episode2CSV(episodeFile)
+
+                print("After call to self.Episode.Episode2CSV, len of episode vector is ", len(self.Episode.EpisodeVector))
 
                 self.Episode.Clear()
+
+        print("done with call to discounted return")
 
 
     def Dictionary2CSV(self, dictTable, filename):

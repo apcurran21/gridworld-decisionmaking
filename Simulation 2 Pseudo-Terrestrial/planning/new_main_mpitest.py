@@ -9,9 +9,10 @@ from grid import Grid
 from entropy import Entropy
 from astar import AStar
 from math import floor
+from time import time
 
 import os, sys, pickle, itertools
-from pathlib2 import Path
+from pathlib import Path
 import numpy as np
 
 from mpi4py import MPI
@@ -65,8 +66,17 @@ def SafeMultiExperiment(args):
         #      % (args[3], args[0][0], args[1][0], str(args[2])))
         MultiExperiment(args)
     except (ValueError, IndexError) as e:
+        print("Value or Index Error in Simulation %d, Entropy 0.%d, Predator %d, Visual Range %s"
+              %(args[3], args[0][0], args[1][0], str(args[2])))
+        print(e)
+    except (OSError) as e:
         print("Error in Simulation %d, Entropy 0.%d, Predator %d, Visual Range %s"
               %(args[3], args[0][0], args[1][0], str(args[2])))
+        print(e)
+    except Exception as e:
+        print("Generic or Unexpected Error in Simulation %d, Entropy 0.%d, Predator %d, Visual Range %s"
+              %(args[3], args[0][0], args[1][0], str(args[2])))
+        print(e)
 
 def MultiExperiment(args):
     occlusionInd = args[0][0]
@@ -98,7 +108,16 @@ def MultiExperiment(args):
 def MPITest(args):
     print("Testing Simulation %d, Entropy 0.%d, Predator %d"
               %(args[3], args[0][0], args[1][0]))
-    Path((args[0])+'/Data').mkdir(parents=True, exist_ok=True)
+    print("Type of args[0]:", type(args[0]))
+    print("Type of args[0][0] (entropy?):", type(args[0][0]))
+    print("Type of args[1]:", type(args[1]))
+    print("Type of args[1][0] (predator?):", type(args[1][0]))
+    print("Type of args[2]:", type(args[2]))
+    print("Type of args[3] (Simulation number?):", type(args[3]))
+    print("Type of args[4]:", type(args[4]))
+    print("Type of args[5]:", type(args[5]))
+    print("Type of args[6]:", type(args[6]))
+    Path(args[0]+'/Data').mkdir(parents=True, exist_ok=True)
     filename = args[0] + "/Data/Results_" + str(args[5]) + ".txt"
     print(filename)
     with open(filename, 'w') as f:
@@ -110,15 +129,87 @@ def enum(*sequential, **named):
 
 tags = enum('READY', 'DONE', 'EXIT', 'START')
 
+def gen_init_vars():
+    print("Beginning to generate the original simulation variables...")
+    planningDir = os.getcwd()
+    print(f"planningDir is {planningDir}.")
+
+    occlusionList = [[[] for occlusionInd in ExperimentParams.EntropyLevels]
+                        for simulationInd in range(ExperimentParams.NumRuns)]
+    predatorList = [[[] for occlusionInd in ExperimentParams.EntropyLevels]
+                        for simulationInd in range(ExperimentParams.NumRuns)]
+    for simulationInd in range(ExperimentParams.NumRuns):
+        for i, entropyValue in enumerate(ExperimentParams.EntropyLevels):
+            while True and entropyValue < .8:
+                numOcclusions = 0
+                occlusions = Grid(XSize, YSize).CreateOcclusions(numOcclusions, AgentHome, GoalPos)
+                while GetEntropy(occlusions)[0] < entropyValue:
+                    #entropyMatrix = GetEntropy(occlusions)[0]
+                    #if entropyMatrix >= entropyValue:
+                    #    break
+                    occlusions = Grid(XSize, YSize).CreateOcclusions(numOcclusions, AgentHome, GoalPos)
+                    numOcclusions += 1
+                path = GetPath(occlusions)
+                if path:
+                    occlusionList[simulationInd][i] = occlusions
+                    break
+
+            while True and entropyValue >= .8:
+                numOcclusions = 20
+                occlusions = Grid(XSize, YSize).CreateRandomOcclusions(numOcclusions, AgentHome, GoalPos)
+                while GetEntropy(occlusions)[0] < entropyValue:
+                    occlusions = Grid(XSize, YSize).CreateOcclusions(numOcclusions, AgentHome, GoalPos)
+                    numOcclusions += 1
+
+                path = GetPath(occlusions)
+                if path:
+                    occlusionList[simulationInd][i] = occlusions
+                    break
+
+            allPredatorLocations = Grid(XSize, YSize).CreatePredatorLocations(ExperimentParams.SpawnArea, AgentHome,
+                                                                        GoalPos,occlusions)
+
+            temp_predator = [allPredatorLocations[Random(0, len(allPredatorLocations))]
+                                    for p in range(ExperimentParams.NumPredators)]
+            predatorList[simulationInd][i] = temp_predator
+
+    print(f"occlusionList: {len(occlusionList)}, predatorList:{len(predatorList)}")
+
+    with open('init_vars.pkl', 'wb') as f:
+        pickle.dump([occlusionList, predatorList], f)
+
+    print(f"Successfully saved the variables to {planningDir + 'init_vars.pkl'}")
+
+def inspect_init_vars():
+    with open('init_vars.pkl', 'rb') as f:
+        occlusionList, predatorList = pickle.load(f)
+
+    import pdb; pdb.set_trace()
+
+    print(type(occlusionList))
+    print(type(predatorList))
+    print(len(occlusionList))
+    print(len(predatorList))
+
 
 if __name__ == "__main__":
     sys.setrecursionlimit(10000)
-    #rank = 0
+
+    # ### Test the generation of initial variables ###
+    # gen_init_vars()
+
+    # ### Inspect the initial variables ###
+    # inspect_init_vars()
+
+    rank = 0
     comm = MPI.COMM_WORLD
     size = comm.size
     rank = comm.rank
     status = MPI.Status()
 
+    ######
+    # Master Code
+    ######
     if rank == 0:
         print("Starting simulation...")
         planningDir = os.getcwd()
@@ -183,6 +274,15 @@ if __name__ == "__main__":
                                           simulationInd, planningDir])
                     tasks.append([(occlusionInd, occlusionList[simulationInd][occlusionInd]),
                             (predatorInd, predatorList[simulationInd][occlusionInd][predatorInd]), None, simulationInd, planningDir])
+                    
+        # # for proof of concept, just run the very first task
+        # tasks = [tasks[0]]
+        print(f"Total number of tasks: {len(tasks)}")
+        print(f"ExperimentParams.NumRuns: {ExperimentParams.NumRuns}")
+        print(f"ExperimentParams.EntropyLevels: {ExperimentParams.EntropyLevels}")
+        print(f"ExperimentParams.NumPredators: {ExperimentParams.NumPredators}")
+        print(f"Visual Range: {visualRange}")
+        print(f"planningDir: {planningDir}")
 
         task_index = 0
         numWorkers = size - 1
@@ -216,6 +316,9 @@ if __name__ == "__main__":
         print("Master finishing...")
         sys.exit(1)
 
+    ######
+    # Worker Code
+    ######
     else:
         name = MPI.Get_processor_name()
         print("I am a worker with rank %d on %s." % (rank, name))
@@ -226,8 +329,8 @@ if __name__ == "__main__":
             tag = status.Get_tag()
 
             if tag == tags.START:
-                SafeMultiExperiment(task)
-                #MPITest(task)
+                # SafeMultiExperiment(task)
+                MPITest(task)
                 comm.send(None, dest=0, tag=tags.DONE)
 
             elif tag == tags.EXIT:

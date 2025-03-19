@@ -67,6 +67,17 @@ class Game(Simulator):
             #self.Display = Display(xsize, ysize, 'game')
             self.InitializeDisplay()
 
+    def GetNoiseArea(self, predator_pos):
+        # get a 3x3 area around the predator, only including valid positions
+        # (eg inside the grid and not in an occlusion
+        noise_area = []
+        for x in range(-1, 2):
+            for y in range(-1, 2):
+                noise_pos = COORD(predator_pos.X + x, predator_pos.Y + y)
+                if self.Valid(noise_pos):
+                    noise_area.append(noise_pos)
+        return noise_area
+
     def GetValidPredatorLocations(self):
         allPredatorLocations = [COORD(x, y) for x in range(self.XSize) for y in range(self.YSize)]
         invalidPredatorLocations = [self.GoalPos, self.AgentHome] + self.Occlusions
@@ -172,16 +183,29 @@ class Game(Simulator):
             reward += self.RewardHitWall
 
         observation = 0
+        audio_observation = 0
         hitPredator = 0
+
         if state.AgentPos == state.PredatorPos:
+            # prey caught by pred
             reward += self.RewardDie
-            return True, state, observation, reward  # Terminate death
+            return True, state, observation, reward, audio_observation  # Terminate death
 
         if self.PredatorObservation(state):
+            # prey saw pred - only one possible pred location in belief state
             state.PredatorBeliefState = [state.AgentPos]
-
-        if not self.PredatorObservation(state):
-            state.PredatorBeliefState = self.PredatorAgentPosPropogation(state)
+        else:
+            # pred isn't visible - have it propagate sound within its radius
+            sound_area = self.GetNoiseArea(state.PredatorPos)
+            if state.AgentPos in sound_area:
+                # need to update the belief state
+                print(f"Prey heard the predator! {len(sound_area)} possible predator locations...")
+                audio_observation = 1
+                state.PredatorBeliefState = sound_area
+                # TODO - i see a potential case where the valid sound area is empty - actually no i think everything works out
+            else:
+                # else the pred is not visible or audible - continue to propagate the belief state as normal
+                state.PredatorBeliefState = self.PredatorAgentPosPropogation(state)
 
         previousPredatorLocation = state.PredatorPos
         state, hitPredator = self.MovePredator(state, Bernoulli(self.MoveProbability), previousPredatorLocation)
@@ -190,14 +214,14 @@ class Game(Simulator):
 
         if hitPredator:
             reward += self.RewardDie
-            return True, state, observation, reward #Terminate death
+            return True, state, observation, reward, audio_observation #Terminate death
 
         if state.AgentPos == self.GoalPos:
             reward += self.RewardClearLevel
-            return True, state, observation, reward #Terminate goal state
+            return True, state, observation, reward, audio_observation #Terminate goal state
 
         state.Depth += 1
-        return False, state, observation, reward
+        return False, state, observation, reward, audio_observation
 
     def MakeObservation(self, state, action):
         observation = 0
